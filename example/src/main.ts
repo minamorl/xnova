@@ -1,4 +1,4 @@
-import { render, createElement, root, text } from '@xnova';
+import { render, createElement, root, text } from 'xnova';
 
 export const App = root<{}>()
   .with(() =>
