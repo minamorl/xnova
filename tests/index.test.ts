@@ -1,4 +1,4 @@
-import { Chain, VirtualDomElement, render, createTextElement, createElement } from '../src/index';
+import { Chain, VirtualDomElement, render, createTextElement, createElement, root, text } from '../src/index';
 
 describe('Chain', () => {
   it('should create a Chain instance', () => {
@@ -21,13 +21,13 @@ describe('Chain', () => {
     });
   });
 
-  it('should compose functions using next', async () => {
+  it('should compose functions using with', async () => {
     const chain = new Chain<{ props: { greeting: string } }, VirtualDomElement>(input => ({
       type: 'div',
       props: {},
       children: [{ type: 'text', props: { nodeValue: 'Hello, ' + input.props.greeting }, children: [] }]
     }));
-    const wrappedChain = chain.next<VirtualDomElement>(divElement => ({
+    const wrappedChain = chain.with<VirtualDomElement>(divElement => ({
       type: 'div',
       props: {},
       children: [divElement]
@@ -53,12 +53,12 @@ describe('Chain', () => {
 
     // Wrap the div in two more divs
     const wrappedChain = chain
-      .next<VirtualDomElement>(divElement => ({
+      .with<VirtualDomElement>(divElement => ({
         type: 'div',
         props: {},
         children: [divElement]
       }))
-      .next<VirtualDomElement>(divElement => ({
+      .with<VirtualDomElement>(divElement => ({
         type: 'div',
         props: {},
         children: [divElement]
@@ -97,7 +97,7 @@ describe('Chain', () => {
     });
   });
 
-  it('should compose async functions using next', async () => {
+  it('should compose async functions using with', async () => {
     const asyncChain = new Chain<{ props: { greeting: string } }, VirtualDomElement>(async input => {
       return {
         type: 'div',
@@ -106,7 +106,7 @@ describe('Chain', () => {
       };
     });
 
-    const wrappedChain = asyncChain.next<VirtualDomElement>(async divElement => {
+    const wrappedChain = asyncChain.with<VirtualDomElement>(async divElement => {
       return {
         type: 'div',
         props: {},
@@ -232,3 +232,26 @@ describe('render', () => {
     expect(container?.textContent).not.toContain('Rendered');
   });
 })
+describe('root function', () => {
+  it('should execute the chain with state and create a virtual DOM text node', async () => {
+    // Define the state type
+    type State = {
+      text: string;
+    };
+
+    // Create a state object
+    const state: State = {
+      text: 'hello'
+    };
+
+    // Create a chain and execute
+    const virtualDomChain = root<State>().with(s => text(s.text));
+    const virtualDomElement = await virtualDomChain.execute(state);
+
+    // Assertions
+    expect(virtualDomElement).toEqual({
+      type: 'text',
+      props: { nodeValue: 'hello' },
+    });
+  });
+});

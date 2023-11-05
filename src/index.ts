@@ -119,8 +119,7 @@ export class Chain<T, U> {
     this.fn = (input: T) => Promise.resolve(fn(input));
   }
 
-  // The next function doesn't need to be async; it should return a new Chain instance
-  next<V>(nextFn: (input: U) => V | Promise<V>): Chain<T, V> {
+  with<V>(nextFn: (input: U) => V | Promise<V>): Chain<T, V> {
     // The composed function should handle the promise returned by this.fn
     const composedFn = (input: T) => this.fn(input).then(nextFn);
     return new Chain<T, V>(composedFn);
@@ -200,4 +199,50 @@ export function render(vNode: VirtualDomElement | null, container: HTMLElement) 
       });
     }
   }
+}
+
+// Define a function that starts the chain with creating a basic virtual DOM element
+export function create(type: ElementType | 'text') {
+  return new Chain<{ props?: {}; events?: {}; children?: VirtualDomElement[] }, VirtualDomElement>(input => {
+    return {
+      type: type,
+      props: input.props || {},
+      events: input.events || {},
+      children: input.children || []
+    };
+  });
+}
+
+export function root<T>(): Chain<T, T> {
+  return new Chain<T, T>((id) => id);
+}
+
+export function text(nodeValue: string) {
+  return {
+    type: 'text',
+    props: {
+      nodeValue
+    }
+  };
+};
+
+// Define a function to set props on the virtual DOM element
+export function props(props: { [key: string]: any }) {
+  return (element: VirtualDomElement) => {
+    return { ...element, props };
+  };
+}
+
+// Define a function to set events on the virtual DOM element
+export function events(events: { [event: string]: (event: Event) => void }) {
+  return (element: VirtualDomElement) => {
+    return { ...element, events };
+  };
+}
+
+// Define a function to add children to the virtual DOM element
+export function children(...children: VirtualDomElement[]) {
+  return (element: VirtualDomElement) => {
+    return { ...element, children };
+  };
 }
