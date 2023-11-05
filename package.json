@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "prepublish": "rm -rf dist && tsc"
+    "preinstall": "rm -rf dist && tsc"
   },
   "keywords": [],
   "author": "",
