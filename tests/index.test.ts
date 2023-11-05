@@ -1,4 +1,4 @@
-import { Chain, VirtualDomElement } from '../src/index';
+import { Chain, VirtualDomElement, render, createTextElement, createElement } from '../src/index';
 
 describe('Chain', () => {
   it('should create a Chain instance', () => {
@@ -142,4 +142,49 @@ describe('Chain', () => {
       .rejects
       .toThrow('No greeting provided');
   });
+});
+
+
+describe('render', () => {
+  let container: HTMLElement | null;
+
+  beforeEach(() => {
+    // Set up a DOM element as a render target
+    container = document.createElement('div');
+    container.id = 'app';
+    document.body.appendChild(container);
+  });
+  afterEach(() => {
+    // Clean up after each test
+    if (container) {
+      document.body.removeChild(container);
+    }
+  });
+
+  it('should render a text element', () => {
+    const textElement = createTextElement('Hello, world!');
+    if (container) render(textElement, container);
+
+    expect(container?.textContent).toBe('Hello, world!');
+  });
+
+  it('should render a simple div element', () => {
+    const divElement = createElement('div', { className: 'test-class' });
+    if (container) render(divElement, container);
+
+    const renderedDiv = container?.querySelector('.test-class');
+    expect(renderedDiv).not.toBeNull();
+    expect(renderedDiv?.tagName).toBe('DIV');
+  });
+
+  it('should render nested elements', () => {
+    const nestedElement = createElement('div', {}, createElement('span', {}, createTextElement('Nested content')));
+
+    if (container) render(nestedElement, container);
+
+    const renderedSpan = container?.querySelector('span');
+    expect(renderedSpan).not.toBeNull();
+    expect(renderedSpan?.textContent).toBe('Nested content');
+  });
+
 });

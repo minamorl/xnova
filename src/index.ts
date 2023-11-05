@@ -179,8 +179,8 @@ export function render(vNode: VirtualDomElement, container: HTMLElement) {
     container.appendChild(domElement);
 
     // Recursively render children if they exist
-    if (vNode.props.children) {
-      vNode.props.children.forEach((child: VirtualDomElement) => {
+    if (vNode.children) {
+      vNode.children.forEach((child: VirtualDomElement) => {
         // Make sure to only call render on HTMLElements
         if (domElement instanceof HTMLElement) {
           render(child, domElement);
