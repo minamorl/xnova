@@ -138,55 +138,125 @@ export type VirtualDomElement = {
   children: VirtualDomElement[];
 };
 
-export function render(vNode: VirtualDomElement | null, container: HTMLElement) {
-  let domElement: HTMLElement | Text;
-  if (!vNode) {
+export function render(vNode: VirtualDomElement | null, container: HTMLElement, oldVNode: VirtualDomElement | null = null) {
+  if (vNode === oldVNode) {
+    // If the vNode is the same as the oldVNode, we don't need to do anything
     return;
   }
 
+  if (oldVNode == null) {
+    // If there was no previous node, we just append the new node
+    container.innerHTML = '';
+    if (vNode) {
+      const newDomElement = createDomElement(vNode);
+      container.appendChild(newDomElement);
+    }
+  } else if (vNode == null) {
+    // If the current vNode is null, remove the child
+    container.innerHTML = '';
+  } else if (vNode.type !== oldVNode.type || vNode.type === 'text' && vNode.props.nodeValue !== oldVNode.props.nodeValue) {
+    // If the types are different, replace the child
+    const newDomElement = createDomElement(vNode);
+    container.replaceChild(newDomElement, container.firstChild!);
+  } else {
+    // If the types are the same, we update the existing DOM node
+    const domElement = container.firstChild as HTMLElement;
+    updateDomElement(domElement, vNode, oldVNode);
+  }
+}
+
+function createDomElement(vNode: VirtualDomElement): HTMLElement | Text {
+  let domElement: HTMLElement | Text;
   if (vNode.type === 'text') {
     // Create a text node if it's a text element
     domElement = document.createTextNode(vNode.props.nodeValue as string);
-    container.appendChild(domElement);
   } else {
     // Create the DOM element
     domElement = document.createElement(vNode.type);
+    updateDomElement(domElement, vNode);
+  }
+  return domElement;
+}
 
-    // Set properties and attributes
-    Object.keys(vNode.props).forEach(propName => {
-      const value = vNode.props[propName];
-      if (propName !== 'children') {
-        if (domElement instanceof HTMLElement) {
-          // Use specific type assertion for HTMLElement
-          if (propName in domElement) {
-            (domElement as any)[propName] = value;
-          } else {
-            domElement.setAttribute(propName, value.toString());
-          }
-        }
+function updateDomElement(domElement: HTMLElement | Text, vNode: VirtualDomElement, oldVNode: VirtualDomElement | null = null) {
+  if (vNode.type === 'text') {
+    // Update text node value
+    if (domElement.nodeValue !== vNode.props.nodeValue) {
+      domElement.nodeValue = vNode.props.nodeValue as string;
+    }
+  } else {
+    // Update properties and attributes
+    updateProps(domElement as HTMLElement, vNode.props, oldVNode?.props || {});
+
+    // Attach or update event handlers
+    updateEvents(domElement as HTMLElement, vNode.events || {}, oldVNode?.events || {});
+
+    // Update children recursively
+    updateChildren(domElement as HTMLElement, vNode.children, oldVNode?.children || []);
+  }
+}
+
+function updateProps(domElement: HTMLElement, newProps: { [key: string]: any }, oldProps: { [key: string]: any }) {
+  // Remove old props
+  for (const propName in oldProps) {
+    if (!(propName in newProps)) {
+      if (propName in domElement) {
+        (domElement as any)[propName] = '';
+      } else {
+        domElement.removeAttribute(propName);
       }
-    });
-
-    // Attach event handlers if they are defined
-    if (vNode.events) {
-      Object.keys(vNode.events).forEach(eventName => {
-        const handler = vNode.events![eventName];
-        domElement.addEventListener(eventName, handler);
-      });
     }
+  }
 
-    // Append the element to the container
-    container.appendChild(domElement);
-
-    // Recursively render children if they exist
-    if (vNode.children) {
-      vNode.children.forEach((child: VirtualDomElement) => {
-        // Make sure to only call render on HTMLElements
-        if (domElement instanceof HTMLElement) {
-          render(child, domElement);
-        }
-      });
+  // Set new props
+  for (const propName in newProps) {
+    if (newProps[propName] !== oldProps[propName]) {
+      if (propName in domElement) {
+        (domElement as any)[propName] = newProps[propName];
+      } else {
+        domElement.setAttribute(propName, newProps[propName].toString());
+      }
     }
+  }
+}
+
+function updateEvents(domElement: HTMLElement, newEvents: { [event: string]: (event: Event) => void }, oldEvents: { [event: string]: (event: Event) => void }) {
+  // Remove old events
+  for (const eventName in oldEvents) {
+    if (!(eventName in newEvents)) {
+      domElement.removeEventListener(eventName, oldEvents[eventName]);
+    }
+  }
+
+  // Add new events
+  for (const eventName in newEvents) {
+    if (oldEvents[eventName] !== newEvents[eventName]) {
+      if (oldEvents[eventName]) {
+        domElement.removeEventListener(eventName, oldEvents[eventName]);
+      }
+      domElement.addEventListener(eventName, newEvents[eventName]);
+    }
+  }
+}
+
+function updateChildren(domElement: HTMLElement, newChildren: VirtualDomElement[], oldChildren: VirtualDomElement[]) {
+  // This is a naive implementation that always updates all children.
+  // A more efficient approach would be to use keys and compare individual children.
+  oldChildren.forEach((child, index) => {
+    const newChild = newChildren[index];
+    if (newChild) {
+      render(newChild, domElement, child);
+    } else if (child) {
+      const childDom = domElement.childNodes[index] as HTMLElement;
+      childDom && domElement.removeChild(childDom);
+    }
+  });
+
+  // Add any new children that didn't exist before
+  for (let i = oldChildren.length; i < newChildren.length; i++) {
+    const newChild = newChildren[i];
+    const newDomElement = createDomElement(newChild);
+    domElement.appendChild(newDomElement);
   }
 }
 
