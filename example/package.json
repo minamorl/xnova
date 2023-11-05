@@ -13,6 +13,7 @@
     "vite": "^4.4.5"
   },
   "dependencies": {
+    "mobx": "^6.10.2",
     "xnova": "file:.."
   }
 }
