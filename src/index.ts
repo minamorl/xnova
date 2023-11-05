@@ -112,18 +112,22 @@ export type ElementType =
   | 'wbr';
 
 export class Chain<T, U> {
-  private fn: (input: T) => U;
+  private fn: (input: T) => Promise<U>;
 
-  constructor(fn: (input: T) => U) {
-    this.fn = fn;
+  constructor(fn: (input: T) => U | Promise<U>) {
+    // Ensure the function always returns a Promise for consistency
+    this.fn = (input: T) => Promise.resolve(fn(input));
   }
 
-  next<V>(nextFn: (input: U) => V): Chain<T, V> {
-    const composedFn = (input: T) => nextFn(this.fn(input));
+  // The next function doesn't need to be async; it should return a new Chain instance
+  next<V>(nextFn: (input: U) => V | Promise<V>): Chain<T, V> {
+    // The composed function should handle the promise returned by this.fn
+    const composedFn = (input: T) => this.fn(input).then(nextFn);
     return new Chain<T, V>(composedFn);
   }
 
-  execute(input: T): U {
+  // The execute function will trigger the chain of promises
+  execute(input: T): Promise<U> {
     return this.fn(input);
   }
 }

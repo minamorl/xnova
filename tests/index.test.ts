@@ -7,28 +7,28 @@ describe('Chain', () => {
     expect(chain).toBeInstanceOf(Chain);
   });
 
-  it('should execute a function correctly', () => {
+  it('should execute a function correctly', async () => {
     const chain = new Chain<{ props: { greeting: string } }, ContainerElement>(input => ({
       type: 'div',
       content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
     }));
-    const result = chain.execute({ props: { greeting: 'world' } });
+    const result = await chain.execute({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
       content: [{ type: 'text', content: 'Hello, world' }]
     });
   });
 
-  it('should compose functions using next', () => {
+  it('should compose functions using next', async () => {
     const chain = new Chain<{ props: { greeting: string } }, ContainerElement>(input => ({
       type: 'div',
       content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
     }));
-    const wrappedChain = chain.next<BaseElement>((divElement: ContainerElement) => ({
+    const wrappedChain = await chain.next<BaseElement>((divElement: ContainerElement) => ({
       type: 'div',
       content: [divElement]
     }));
-    const result = wrappedChain.execute({ props: { greeting: 'world' } });
+    const result = await wrappedChain.execute({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
       content: [{
@@ -37,7 +37,7 @@ describe('Chain', () => {
       }]
     });
   });
-  it('should handle deeply nested structures', () => {
+  it('should handle deeply nested structures', async () => {
     const chain = new Chain<{ props: { greeting: string } }, ContainerElement>(input => ({
       type: 'div',
       content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
@@ -54,7 +54,7 @@ describe('Chain', () => {
         content: [divElement]
       }));
 
-    const result = wrappedChain.execute({ props: { greeting: 'world' } });
+    const result = await wrappedChain.execute({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
       content: [{
@@ -65,5 +65,60 @@ describe('Chain', () => {
         }]
       }]
     });
+  });
+  it('should execute an async function correctly', async () => {
+    const asyncChain = new Chain<{ props: { greeting: string } }, ContainerElement>(async input => {
+      return {
+        type: 'div',
+        content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
+      };
+    });
+
+    const result = await asyncChain.execute({ props: { greeting: 'world' } });
+    expect(result).toEqual({
+      type: 'div',
+      content: [{ type: 'text', content: 'Hello, world' }]
+    });
+  });
+
+  it('should compose async functions using next', async () => {
+    const asyncChain = new Chain<{ props: { greeting: string } }, ContainerElement>(async input => {
+      return {
+        type: 'div',
+        content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
+      };
+    });
+
+    const wrappedChain = await asyncChain.next<BaseElement>(async divElement => {
+      return {
+        type: 'div',
+        content: [divElement]
+      };
+    });
+
+    const result = await wrappedChain.execute({ props: { greeting: 'world' } });
+    expect(result).toEqual({
+      type: 'div',
+      content: [{
+        type: 'div',
+        content: [{ type: 'text', content: 'Hello, world' }]
+      }]
+    });
+  });
+
+  it('should handle errors during execution', async () => {
+    const errorChain = new Chain<{ props: { greeting: string } }, ContainerElement>(async input => {
+      if (!input.props.greeting) {
+        throw new Error('No greeting provided');
+      }
+      return {
+        type: 'div',
+        content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
+      };
+    });
+
+    await expect(errorChain.execute({ props: { greeting: '' } }))
+      .rejects
+      .toThrow('No greeting provided');
   });
 });
