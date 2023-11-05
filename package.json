@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "preinstall": "rm -rf dist && tsc"
+    "prepublishOnly": "npm run build"
   },
   "keywords": [],
   "author": "",
