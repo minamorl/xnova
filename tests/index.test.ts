@@ -37,4 +37,33 @@ describe('Chain', () => {
       }]
     });
   });
+  it('should handle deeply nested structures', () => {
+    const chain = new Chain<{ props: { greeting: string } }, ContainerElement>(input => ({
+      type: 'div',
+      content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
+    }));
+
+    // Wrap the div in two more divs
+    const wrappedChain = chain
+      .next<BaseElement>(divElement => ({
+        type: 'div',
+        content: [divElement]
+      }))
+      .next<BaseElement>(divElement => ({
+        type: 'div',
+        content: [divElement]
+      }));
+
+    const result = wrappedChain.execute({ props: { greeting: 'world' } });
+    expect(result).toEqual({
+      type: 'div',
+      content: [{
+        type: 'div',
+        content: [{
+          type: 'div',
+          content: [{ type: 'text', content: 'Hello, world' }]
+        }]
+      }]
+    });
+  });
 });
