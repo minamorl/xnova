@@ -1,119 +1,140 @@
-import { Chain, ContainerElement, BaseElement } from '../src/index';
+import { Chain, VirtualDomElement } from '../src/index';
 
 describe('Chain', () => {
   it('should create a Chain instance', () => {
-    const fn = jest.fn(input => ({ type: 'div', content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }] }));
+    const fn = jest.fn(input => ({ type: 'div', props: {}, children: [{ type: 'text', props: { nodeValue: 'Hello, ' + input.props.greeting }, children: [] }] }));
     const chain = new Chain(fn);
     expect(chain).toBeInstanceOf(Chain);
   });
 
   it('should execute a function correctly', async () => {
-    const chain = new Chain<{ props: { greeting: string } }, ContainerElement>(input => ({
+    const chain = new Chain<{ props: { greeting: string } }, VirtualDomElement>(input => ({
       type: 'div',
-      content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
+      props: {},
+      children: [{ type: 'text', props: { nodeValue: 'Hello, ' + input.props.greeting }, children: [] }]
     }));
     const result = await chain.execute({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
-      content: [{ type: 'text', content: 'Hello, world' }]
+      props: {},
+      children: [{ type: 'text', props: { nodeValue: 'Hello, world' }, children: [] }]
     });
   });
 
   it('should compose functions using next', async () => {
-    const chain = new Chain<{ props: { greeting: string } }, ContainerElement>(input => ({
+    const chain = new Chain<{ props: { greeting: string } }, VirtualDomElement>(input => ({
       type: 'div',
-      content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
+      props: {},
+      children: [{ type: 'text', props: { nodeValue: 'Hello, ' + input.props.greeting }, children: [] }]
     }));
-    const wrappedChain = await chain.next<BaseElement>((divElement: ContainerElement) => ({
+    const wrappedChain = chain.next<VirtualDomElement>(divElement => ({
       type: 'div',
-      content: [divElement]
+      props: {},
+      children: [divElement]
     }));
     const result = await wrappedChain.execute({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
-      content: [{
+      props: {},
+      children: [{
         type: 'div',
-        content: [{ type: 'text', content: 'Hello, world' }]
+        props: {},
+        children: [{ type: 'text', props: { nodeValue: 'Hello, world' }, children: [] }]
       }]
     });
   });
+
   it('should handle deeply nested structures', async () => {
-    const chain = new Chain<{ props: { greeting: string } }, ContainerElement>(input => ({
+    const chain = new Chain<{ props: { greeting: string } }, VirtualDomElement>(input => ({
       type: 'div',
-      content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
+      props: {},
+      children: [{ type: 'text', props: { nodeValue: 'Hello, ' + input.props.greeting }, children: [] }]
     }));
 
     // Wrap the div in two more divs
     const wrappedChain = chain
-      .next<BaseElement>(divElement => ({
+      .next<VirtualDomElement>(divElement => ({
         type: 'div',
-        content: [divElement]
+        props: {},
+        children: [divElement]
       }))
-      .next<BaseElement>(divElement => ({
+      .next<VirtualDomElement>(divElement => ({
         type: 'div',
-        content: [divElement]
+        props: {},
+        children: [divElement]
       }));
 
     const result = await wrappedChain.execute({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
-      content: [{
+      props: {},
+      children: [{
         type: 'div',
-        content: [{
+        props: {},
+        children: [{
           type: 'div',
-          content: [{ type: 'text', content: 'Hello, world' }]
+          props: {},
+          children: [{ type: 'text', props: { nodeValue: 'Hello, world' }, children: [] }]
         }]
       }]
     });
   });
+
   it('should execute an async function correctly', async () => {
-    const asyncChain = new Chain<{ props: { greeting: string } }, ContainerElement>(async input => {
+    const asyncChain = new Chain<{ props: { greeting: string } }, VirtualDomElement>(async input => {
       return {
         type: 'div',
-        content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
+        props: {},
+        children: [{ type: 'text', props: { nodeValue: 'Hello, ' + input.props.greeting }, children: [] }]
       };
     });
 
     const result = await asyncChain.execute({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
-      content: [{ type: 'text', content: 'Hello, world' }]
+      props: {},
+      children: [{ type: 'text', props: { nodeValue: 'Hello, world' }, children: [] }]
     });
   });
 
   it('should compose async functions using next', async () => {
-    const asyncChain = new Chain<{ props: { greeting: string } }, ContainerElement>(async input => {
+    const asyncChain = new Chain<{ props: { greeting: string } }, VirtualDomElement>(async input => {
       return {
         type: 'div',
-        content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
+        props: {},
+        children: [{ type: 'text', props: { nodeValue: 'Hello, ' + input.props.greeting }, children: [] }]
       };
     });
 
-    const wrappedChain = await asyncChain.next<BaseElement>(async divElement => {
+    const wrappedChain = asyncChain.next<VirtualDomElement>(async divElement => {
       return {
         type: 'div',
-        content: [divElement]
+        props: {},
+        children: [divElement]
       };
     });
 
     const result = await wrappedChain.execute({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
-      content: [{
+      props: {},
+      children: [{
         type: 'div',
-        content: [{ type: 'text', content: 'Hello, world' }]
+        props: {},
+        children: [{ type: 'text', props: { nodeValue: 'Hello, world' }, children: [] }]
       }]
     });
   });
 
   it('should handle errors during execution', async () => {
-    const errorChain = new Chain<{ props: { greeting: string } }, ContainerElement>(async input => {
+    const errorChain = new Chain<{ props: { greeting: string } }, VirtualDomElement>(async input => {
       if (!input.props.greeting) {
         throw new Error('No greeting provided');
       }
       return {
         type: 'div',
-        content: [{ type: 'text', content: 'Hello, ' + input.props.greeting }]
+        props: {},
+        children: [{ type: 'text', props: { nodeValue: 'Hello, ' + input.props.greeting }, children: [] }]
       };
     });
 

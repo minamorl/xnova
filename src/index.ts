@@ -132,15 +132,60 @@ export class Chain<T, U> {
   }
 }
 
-export type ContainerElement = {
-  type: ElementType,
-  content: Array<BaseElement>; // content is now an array that can include any BaseElement
+// Define the virtual DOM element type
+export type VirtualDomElement = {
+  type: ElementType | 'text';
+  props: { [key: string]: any };
+  children: VirtualDomElement[];
 };
 
-export type TextElement = {
-  type: 'text',
-  content: string;
-};
+// Function to create a virtual DOM element
+export function createElement(type: ElementType, props: { [key: string]: any }, ...children: VirtualDomElement[]): VirtualDomElement {
+  return { type, props, children };
+}
 
-export type BaseElement = ContainerElement | TextElement; // This union allows for both types in the content array
+// Function to create a virtual text element
+export function createTextElement(text: string): VirtualDomElement {
+  return { type: 'text', props: { nodeValue: text }, children: [] };
+}
 
+export function render(vNode: VirtualDomElement, container: HTMLElement) {
+  let domElement: HTMLElement | Text;
+
+  if (vNode.type === 'text') {
+    // Create a text node if it's a text element
+    domElement = document.createTextNode(vNode.props.nodeValue as string);
+    container.appendChild(domElement);
+  } else {
+    // Create the DOM element
+    domElement = document.createElement(vNode.type);
+
+    // Set properties and attributes
+    Object.keys(vNode.props).forEach(propName => {
+      const value = vNode.props[propName];
+      if (propName !== 'children') {
+        if (domElement instanceof HTMLElement) {
+          // Use specific type assertion for HTMLElement
+          if (propName in domElement) {
+            (domElement as any)[propName] = value;
+          } else {
+            domElement.setAttribute(propName, value.toString());
+          }
+        }
+      }
+    });
+
+    // Append the element to the container
+    container.appendChild(domElement);
+
+    // Recursively render children if they exist
+    if (vNode.props.children) {
+      vNode.props.children.forEach((child: VirtualDomElement) => {
+        // Make sure to only call render on HTMLElements
+        if (domElement instanceof HTMLElement) {
+          render(child, domElement);
+        }
+      });
+    }
+  }
+}
