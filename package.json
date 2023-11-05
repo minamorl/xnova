@@ -4,10 +4,9 @@
   "description": "Xnova is a next-gen DOM library",
   "main": "dist/index.js",
   "scripts": {
-    "start": "npm run build && node dist/index.js",
     "build": "tsc",
     "test": "jest",
-    "postinstall": "rm -rf dist && npx tsc"
+    "prepublish": "rm -rf dist && tsc"
   },
   "keywords": [],
   "author": "",
