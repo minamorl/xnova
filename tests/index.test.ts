@@ -200,23 +200,24 @@ describe('render', () => {
   });
 
   it('should attach an event listener to an element', () => {
-  const mockClickHandler = jest.fn();
+    const mockClickHandler = jest.fn();
 
-  // Create your virtual DOM element with events outside of props
-  const buttonElement = createElement('button', { /* props here */ }, {
-    click: mockClickHandler
-  }, createTextElement('Click me'));
+    // Create your virtual DOM element with events outside of props
+    const buttonElement = createElement('button', { /* props here */ }, {
+      click: mockClickHandler
+    }, createTextElement('Click me'));
 
-  // Render your button element
-  if(container) render(buttonElement, container);
+    // Render your button element
+    if(container) render(buttonElement, container);
 
-  // Simulate the click event
-  const button = container?.querySelector('button');
-  button?.dispatchEvent(new Event('click'));
+    // Simulate the click event
+    const button = container?.querySelector('button');
+    button?.dispatchEvent(new Event('click'));
 
-  // Check if the mock function was called
-  expect(mockClickHandler).toHaveBeenCalled();
-});
+    // Check if the mock function was called
+    expect(mockClickHandler).toHaveBeenCalled();
+  });
+
   it('should handle conditional rendering', () => {
     const renderIfTrue = (condition: boolean) =>
       condition ? createElement('span', {}, {}, createTextElement('Rendered')) : null;
