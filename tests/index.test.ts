@@ -1,4 +1,4 @@
-import { Chain, VirtualDomElement, render, root, text, create, props, children, events } from '../src/index';
+import { Chain, VirtualDomElement, render, text, create, props, children, events } from '../src/index';
 
 describe('Chain', () => {
   it('should create a Chain instance', () => {
@@ -7,13 +7,13 @@ describe('Chain', () => {
     expect(chain).toBeInstanceOf(Chain);
   });
 
-  it('should execute a function correctly', async () => {
+  it('should run a function correctly', async () => {
     const chain = new Chain<{ props: { greeting: string } }, VirtualDomElement>(input => ({
       type: 'div',
       props: {},
       children: [{ type: 'text', props: { nodeValue: 'Hello, ' + input.props.greeting }, children: [] }]
     }));
-    const result = await chain.execute({ props: { greeting: 'world' } });
+    const result = await chain.run({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
       props: {},
@@ -32,7 +32,7 @@ describe('Chain', () => {
       props: {},
       children: [divElement]
     }));
-    const result = await wrappedChain.execute({ props: { greeting: 'world' } });
+    const result = await wrappedChain.run({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
       props: {},
@@ -64,7 +64,7 @@ describe('Chain', () => {
         children: [divElement]
       }));
 
-    const result = await wrappedChain.execute({ props: { greeting: 'world' } });
+    const result = await wrappedChain.run({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
       props: {},
@@ -89,7 +89,7 @@ describe('Chain', () => {
       };
     });
 
-    const result = await asyncChain.execute({ props: { greeting: 'world' } });
+    const result = await asyncChain.run({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
       props: {},
@@ -114,7 +114,7 @@ describe('Chain', () => {
       };
     });
 
-    const result = await wrappedChain.execute({ props: { greeting: 'world' } });
+    const result = await wrappedChain.run({ props: { greeting: 'world' } });
     expect(result).toEqual({
       type: 'div',
       props: {},
@@ -138,7 +138,7 @@ describe('Chain', () => {
       };
     });
 
-    await expect(errorChain.execute({ props: { greeting: '' } }))
+    await expect(errorChain.run({ props: { greeting: '' } }))
       .rejects
       .toThrow('No greeting provided');
   });
@@ -161,15 +161,15 @@ describe('render', () => {
     }
   });
 
-  it('should render a text element', () => {
-    const textElement = text('Hello, world!');
+  it('should render a text element', async () => {
+    const textElement = await text('Hello, world!').run()
     if (container) render(textElement, container);
 
     expect(container?.textContent).toBe('Hello, world!');
   });
 
   it('should render a simple div element', async () => {
-    const divElement = await create('div').with(props({ className: 'test-class' })).execute({})
+    const divElement = await create('div').with(props({ className: 'test-class' })).run()
     if (container) render(divElement, container);
 
     const renderedDiv = container?.querySelector('.test-class');
@@ -179,8 +179,8 @@ describe('render', () => {
 
 it('should render nested elements', async () => {
     const nestedElement = await create('div').with(children(
-      await create('span').with(children(text('Nested content'))).execute({})
-    )).execute({});
+      create('span').with(children(text('Nested content')))
+    )).run();
     if (container) render(nestedElement, container);
 
     const renderedSpan = container?.querySelector('span');
@@ -190,7 +190,7 @@ it('should render nested elements', async () => {
 
   it('should render an element with various properties', async () => {
     const prop = { id: 'unique', className: 'my-class', 'data-custom': 'custom-data' };
-    const element = await create('div').with(props(prop)).execute({})
+    const element = await create('div').with(props(prop)).run()
     if (container) render(element, container);
 
     const renderedElement = container?.firstChild as HTMLElement;
@@ -211,7 +211,7 @@ it('should render nested elements', async () => {
         children(
           text('Click me')
         )
-      ).execute({});
+      ).run()
 
     // Render your button element
     if(container) render(buttonElement, container);
@@ -226,7 +226,7 @@ it('should render nested elements', async () => {
 
   it('should handle conditional rendering', async () => {
     const renderIfTrue = async (condition: boolean) =>
-      condition ? await create('span').with(children(text('Rendered'))).execute({}) : null;
+      condition ? await create('span').with(children(text('Rendered'))).run() : null;
 
     if (container) render(await renderIfTrue(true), container);
     expect(container?.textContent).toContain('Rendered');
@@ -238,27 +238,3 @@ it('should render nested elements', async () => {
     expect(container?.textContent).not.toContain('Rendered');
   });
 })
-describe('root function', () => {
-  it('should execute the chain with state and create a virtual DOM text node', async () => {
-    // Define the state type
-    type State = {
-      text: string;
-    };
-
-    // Create a state object
-    const state: State = {
-      text: 'hello'
-    };
-
-    // Create a chain and execute
-    const virtualDomChain = root<State>().with(s => text(s.text));
-    const virtualDomElement = await virtualDomChain.execute(state);
-
-    // Assertions
-    expect(virtualDomElement).toEqual({
-      type: 'text',
-      props: { nodeValue: 'hello' },
-      children: []
-    });
-  });
-});

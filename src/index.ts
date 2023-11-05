@@ -119,15 +119,14 @@ export class Chain<T, U> {
     this.fn = (input: T) => Promise.resolve(fn(input));
   }
 
-  with<V>(nextFn: (input: U) => V | Promise<V>): Chain<T, V> {
+  with<V>(this: Chain<T, U>, nextFn: (input: U) => V | Promise<V>): Chain<T, V> {
     // The composed function should handle the promise returned by this.fn
     const composedFn = (input: T) => this.fn(input).then(nextFn);
     return new Chain<T, V>(composedFn);
   }
 
-  // The execute function will trigger the chain of promises
-  execute(input: T): Promise<U> {
-    return this.fn(input);
+  run(input?: T): Promise<U> {
+    return this.fn(input ?? null as T);
   }
 }
 
@@ -193,28 +192,25 @@ export function render(vNode: VirtualDomElement | null, container: HTMLElement) 
 
 // Define a function that starts the chain with creating a basic virtual DOM element
 export function create(type: ElementType | 'text') {
-  return new Chain<{ props?: {}; events?: {}; children?: VirtualDomElement[] }, VirtualDomElement>(input => {
+  return new Chain<VirtualDomElement | null, VirtualDomElement>(input => {
     return {
       type: type,
-      props: input.props || {},
-      events: input.events || {},
-      children: input.children || []
+      props: input?.props || {},
+      events: input?.events || {},
+      children: input?.children || []
     };
   });
 }
 
-export function root<T>(): Chain<T, T> {
-  return new Chain<T, T>((id) => id);
-}
 
-export function text(nodeValue: string): VirtualDomElement {
-  return {
+export function text(nodeValue: string): Chain<VirtualDomElement | null, VirtualDomElement> {
+  return new Chain(() => ({
     type: 'text',
     props: {
       nodeValue
     },
     children: []
-  };
+  }));
 };
 
 // Define a function to set props on the virtual DOM element
@@ -232,8 +228,13 @@ export function events(events: { [event: string]: (event: Event) => void }) {
 }
 
 // Define a function to add children to the virtual DOM element
-export function children(...children: VirtualDomElement[]) {
-  return (element: VirtualDomElement) => {
-    return { ...element, children };
+export function children(...childrenChains: Chain<VirtualDomElement | null, VirtualDomElement>[]) {
+  return async (element: VirtualDomElement): Promise<VirtualDomElement> => {
+    // Resolve all child chains to get the VirtualDomElements
+    const resolvedChildren = await Promise.all(childrenChains.map(chain => chain.run(null)));
+    // Filter out any nulls that may have been returned (if the chains allow for nulls)
+    const nonNullChildren = resolvedChildren.filter(child => child !== null) as VirtualDomElement[];
+    // Return the element with the children added
+    return { ...element, children: nonNullChildren };
   };
 }
