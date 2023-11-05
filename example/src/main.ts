@@ -1,5 +1,5 @@
 import './index.css'
-import { render, createElement, createTextElement, VirtualDomElement } from 'xnova';
+import { root, render, createElement, createTextElement, VirtualDomElement } from 'xnova';
 
 // Function to create the header with a logo and navigation
 const createHeader = (): VirtualDomElement => {
@@ -66,7 +66,7 @@ const createFooter = (): VirtualDomElement => {
 
 // Root component that renders the web3 welcome page
 export const Web3WelcomePage = (): VirtualDomElement => {
-  return createElement('div', {
+  return root('div', {
     class: 'flex flex-col h-screen'
   }, {},
     createHeader(),

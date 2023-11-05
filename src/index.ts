@@ -139,16 +139,6 @@ export type VirtualDomElement = {
   children: VirtualDomElement[];
 };
 
-// Function to create a virtual DOM element
-export function createElement(type: ElementType, props: { [key: string]: any }, events: { [event: string]: (event: Event) => void }, ...children: VirtualDomElement[]): VirtualDomElement {
-  return { type, props, events, children };
-}
-
-// Function to create a virtual text element
-export function createTextElement(text: string): VirtualDomElement {
-  return { type: 'text', props: { nodeValue: text }, children: [] };
-}
-
 export function render(vNode: VirtualDomElement | null, container: HTMLElement) {
   let domElement: HTMLElement | Text;
   if (!vNode) {
@@ -217,12 +207,13 @@ export function root<T>(): Chain<T, T> {
   return new Chain<T, T>((id) => id);
 }
 
-export function text(nodeValue: string) {
+export function text(nodeValue: string): VirtualDomElement {
   return {
     type: 'text',
     props: {
       nodeValue
-    }
+    },
+    children: []
   };
 };
 

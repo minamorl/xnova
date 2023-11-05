@@ -1,4 +1,4 @@
-import { Chain, VirtualDomElement, render, createTextElement, createElement, root, text } from '../src/index';
+import { Chain, VirtualDomElement, render, root, text, create, props, children, events } from '../src/index';
 
 describe('Chain', () => {
   it('should create a Chain instance', () => {
@@ -162,14 +162,14 @@ describe('render', () => {
   });
 
   it('should render a text element', () => {
-    const textElement = createTextElement('Hello, world!');
+    const textElement = text('Hello, world!');
     if (container) render(textElement, container);
 
     expect(container?.textContent).toBe('Hello, world!');
   });
 
-  it('should render a simple div element', () => {
-    const divElement = createElement('div', { className: 'test-class' }, {});
+  it('should render a simple div element', async () => {
+    const divElement = await create('div').with(props({ className: 'test-class' })).execute({})
     if (container) render(divElement, container);
 
     const renderedDiv = container?.querySelector('.test-class');
@@ -177,19 +177,20 @@ describe('render', () => {
     expect(renderedDiv?.tagName).toBe('DIV');
   });
 
-  it('should render nested elements', () => {
-    const nestedElement = createElement('div', {}, {}, createElement('span', {}, {}, createTextElement('Nested content')));
-
+it('should render nested elements', async () => {
+    const nestedElement = await create('div').with(children(
+      await create('span').with(children(text('Nested content'))).execute({})
+    )).execute({});
     if (container) render(nestedElement, container);
 
     const renderedSpan = container?.querySelector('span');
     expect(renderedSpan).not.toBeNull();
     expect(renderedSpan?.textContent).toBe('Nested content');
-  });
+});
 
-  it('should render an element with various properties', () => {
-    const props = { id: 'unique', className: 'my-class', 'data-custom': 'custom-data' };
-    const element = createElement('div', props, {});
+  it('should render an element with various properties', async () => {
+    const prop = { id: 'unique', className: 'my-class', 'data-custom': 'custom-data' };
+    const element = await create('div').with(props(prop)).execute({})
     if (container) render(element, container);
 
     const renderedElement = container?.firstChild as HTMLElement;
@@ -199,13 +200,18 @@ describe('render', () => {
     expect(renderedElement.getAttribute('data-custom')).toBe('custom-data');
   });
 
-  it('should attach an event listener to an element', () => {
+  it('should attach an event listener to an element', async () => {
     const mockClickHandler = jest.fn();
 
     // Create your virtual DOM element with events outside of props
-    const buttonElement = createElement('button', { /* props here */ }, {
-      click: mockClickHandler
-    }, createTextElement('Click me'));
+    const buttonElement = await create('button').with(
+      events({
+        click: mockClickHandler
+      })).with(
+        children(
+          text('Click me')
+        )
+      ).execute({});
 
     // Render your button element
     if(container) render(buttonElement, container);
@@ -218,17 +224,17 @@ describe('render', () => {
     expect(mockClickHandler).toHaveBeenCalled();
   });
 
-  it('should handle conditional rendering', () => {
-    const renderIfTrue = (condition: boolean) =>
-      condition ? createElement('span', {}, {}, createTextElement('Rendered')) : null;
+  it('should handle conditional rendering', async () => {
+    const renderIfTrue = async (condition: boolean) =>
+      condition ? await create('span').with(children(text('Rendered'))).execute({}) : null;
 
-    if (container) render(renderIfTrue(true), container);
+    if (container) render(await renderIfTrue(true), container);
     expect(container?.textContent).toContain('Rendered');
   
     if (container) container.innerHTML = '';
 
     // Re-render with the condition being false
-    if (container) render(renderIfTrue(false), container);
+    if (container) render(await renderIfTrue(false), container);
     expect(container?.textContent).not.toContain('Rendered');
   });
 })
@@ -252,6 +258,7 @@ describe('root function', () => {
     expect(virtualDomElement).toEqual({
       type: 'text',
       props: { nodeValue: 'hello' },
+      children: []
     });
   });
 });
