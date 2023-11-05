@@ -169,7 +169,7 @@ describe('render', () => {
   });
 
   it('should render a simple div element', () => {
-    const divElement = createElement('div', { className: 'test-class' });
+    const divElement = createElement('div', { className: 'test-class' }, {});
     if (container) render(divElement, container);
 
     const renderedDiv = container?.querySelector('.test-class');
@@ -178,7 +178,7 @@ describe('render', () => {
   });
 
   it('should render nested elements', () => {
-    const nestedElement = createElement('div', {}, createElement('span', {}, createTextElement('Nested content')));
+    const nestedElement = createElement('div', {}, {}, createElement('span', {}, {}, createTextElement('Nested content')));
 
     if (container) render(nestedElement, container);
 
@@ -187,4 +187,47 @@ describe('render', () => {
     expect(renderedSpan?.textContent).toBe('Nested content');
   });
 
+  it('should render an element with various properties', () => {
+    const props = { id: 'unique', className: 'my-class', 'data-custom': 'custom-data' };
+    const element = createElement('div', props, {});
+    if (container) render(element, container);
+
+    const renderedElement = container?.firstChild as HTMLElement;
+    expect(renderedElement).not.toBeNull();
+    expect(renderedElement.id).toBe('unique');
+    expect(renderedElement.className).toBe('my-class');
+    expect(renderedElement.getAttribute('data-custom')).toBe('custom-data');
+  });
+
+  it('should attach an event listener to an element', () => {
+  const mockClickHandler = jest.fn();
+
+  // Create your virtual DOM element with events outside of props
+  const buttonElement = createElement('button', { /* props here */ }, {
+    click: mockClickHandler
+  }, createTextElement('Click me'));
+
+  // Render your button element
+  if(container) render(buttonElement, container);
+
+  // Simulate the click event
+  const button = container?.querySelector('button');
+  button?.dispatchEvent(new Event('click'));
+
+  // Check if the mock function was called
+  expect(mockClickHandler).toHaveBeenCalled();
 });
+  it('should handle conditional rendering', () => {
+    const renderIfTrue = (condition: boolean) =>
+      condition ? createElement('span', {}, {}, createTextElement('Rendered')) : null;
+
+    if (container) render(renderIfTrue(true), container);
+    expect(container?.textContent).toContain('Rendered');
+  
+    if (container) container.innerHTML = '';
+
+    // Re-render with the condition being false
+    if (container) render(renderIfTrue(false), container);
+    expect(container?.textContent).not.toContain('Rendered');
+  });
+})

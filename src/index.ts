@@ -135,13 +135,14 @@ export class Chain<T, U> {
 // Define the virtual DOM element type
 export type VirtualDomElement = {
   type: ElementType | 'text';
+  events?: { [event: string]: (event: Event) => void }; // Optional events object
   props: { [key: string]: any };
   children: VirtualDomElement[];
 };
 
 // Function to create a virtual DOM element
-export function createElement(type: ElementType, props: { [key: string]: any }, ...children: VirtualDomElement[]): VirtualDomElement {
-  return { type, props, children };
+export function createElement(type: ElementType, props: { [key: string]: any }, events: { [event: string]: (event: Event) => void }, ...children: VirtualDomElement[]): VirtualDomElement {
+  return { type, props, events, children };
 }
 
 // Function to create a virtual text element
@@ -149,8 +150,11 @@ export function createTextElement(text: string): VirtualDomElement {
   return { type: 'text', props: { nodeValue: text }, children: [] };
 }
 
-export function render(vNode: VirtualDomElement, container: HTMLElement) {
+export function render(vNode: VirtualDomElement | null, container: HTMLElement) {
   let domElement: HTMLElement | Text;
+  if (!vNode) {
+    return;
+  }
 
   if (vNode.type === 'text') {
     // Create a text node if it's a text element
@@ -174,6 +178,14 @@ export function render(vNode: VirtualDomElement, container: HTMLElement) {
         }
       }
     });
+
+    // Attach event handlers if they are defined
+    if (vNode.events) {
+      Object.keys(vNode.events).forEach(eventName => {
+        const handler = vNode.events![eventName];
+        domElement.addEventListener(eventName, handler);
+      });
+    }
 
     // Append the element to the container
     container.appendChild(domElement);
